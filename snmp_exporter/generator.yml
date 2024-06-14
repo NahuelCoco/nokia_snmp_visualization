@@ -1,0 +1,17 @@
+#auth:
+#  auth_name:
+#    version: 2  # SNMP version to use. Defaults to 2.
+                # 1 will use GETNEXT, 2 and 3 use GETBULK.
+
+    # Community string is used with SNMP v1 and v2. Defaults to "public".
+#    community: private
+
+modules:
+
+  sarMIB:
+    walk:
+      - 1.3.6.1.4.1.6527.3.1.2.4.3.40 #sapCemInfoTable
+      - 1.3.6.1.4.1.6527.3.1.2.4.3.41 #sapCemStatsTable
+      - 1.3.6.1.4.1.6527.3.1.2.52.7.3 #tmnxDot1agCfmMepDelayRsltTable
+      - 1.3.6.1.2.1.31 #IfMib
+#      - 1.3.6.1.4.1.6527.3.1.2.4.3 #tmnxSapObjs

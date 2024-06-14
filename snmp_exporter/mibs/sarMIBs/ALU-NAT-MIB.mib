@@ -1,0 +1,761 @@
+ALU-NAT-MIB DEFINITIONS ::= BEGIN
+
+IMPORTS
+    Unsigned32, Gauge32, Counter32, Counter64,
+    MODULE-IDENTITY,
+    OBJECT-TYPE,
+    NOTIFICATION-TYPE
+                                                                FROM SNMPv2-SMI
+
+    CounterBasedGauge64                                           FROM HCNUM-TC
+
+    RowStatus, TEXTUAL-CONVENTION,
+    TimeStamp, DateAndTime, TruthValue,
+    DisplayString
+                                                                 FROM SNMPv2-TC
+
+
+    OBJECT-GROUP, MODULE-COMPLIANCE,
+    NOTIFICATION-GROUP
+                                                               FROM SNMPv2-CONF
+
+    InetAddressType, InetAddress, InetPortNumber,
+    InetAddressPrefixLength, InetAddressIPv6,
+    InetAddressIPv4
+                                                          FROM INET-ADDRESS-MIB
+
+    timetraSRMIBModules, tmnxSRObjs, tmnxSRConfs,
+    tmnxSRNotifyPrefix
+                                                        FROM TIMETRA-GLOBAL-MIB
+
+    TmnxAdminState, TmnxOperState, TItemDescription,
+    TmnxEnabledDisabled,
+    TNamedItem, TNamedItemOrEmpty,
+    TmnxVRtrID, TmnxVRtrIDOrZero,
+    TFCSet, TIpProtocol, TmnxActionType,
+    TmnxSubRadServAlgorithm,
+    TmnxSubRadiusAttrType,
+    TmnxSubRadiusVendorId,
+    TmnxDisplayStringURL,
+    TmnxNatSubscriberType,
+    TmnxNatIsaGrpId, TmnxNatIsaGrpIdOrZero,
+    ServiceOperStatus, TmnxCreateOrigin
+                                                            FROM TIMETRA-TC-MIB
+
+    aluSARMIBModules, aluSARObjs,
+    aluSARConfs, aluSARNotifyPrefix
+                                                            FROM ALU-SAR-GLOBAL-MIB
+
+    InterfaceIndexOrZero                                    FROM IF-MIB
+
+    svcId, SdpId                                            FROM TIMETRA-SERV-MIB
+    sdpBindId
+                                                            FROM TIMETRA-SDP-MIB
+    vRtrID, vRtrIfIndex
+                                                          FROM TIMETRA-VRTR-MIB
+    ;
+
+    aluNatMIBModule MODULE-IDENTITY
+    LAST-UPDATED "202001160000Z"
+    ORGANIZATION "Nokia"
+    CONTACT-INFO
+        "Nokia SROS Support
+         Web: http://support.nokia.com"
+    DESCRIPTION
+        "This document is the SNMP MIB  module to manage and provision
+         the  Nokia 7705 device with 1:1 static NAT
+         and other related features.
+
+         Copyright 2008-2020 Nokia. All rights reserved.
+
+         Reproduction of  this document is authorized  on the condition 
+         that the foregoing copyright notice is included.
+
+         This SNMP MIB module (Specification) embodies Nokia's
+         proprietary  intellectual  property. Nokia retains all 
+         title and ownership in the Specification, including any revisions.
+
+         Nokia grants all interested parties a non-exclusive 
+         license to use and distribute an unmodified copy of this 
+         Specification in connection with management of Nokia
+         products, and without fee, provided this copyright notice and 
+         license appear on all copies.
+
+         This  Specification  is supplied `as is', and Nokia
+         makes no warranty, either express or implied, as to the use, 
+         operation, condition, or performance of the Specification."
+
+--
+--  Revision History
+--
+        REVISION        "202001150000Z"
+        DESCRIPTION     "Rev 0.1                15 Jan 2020 00:00
+                         Initial version of the ALU-NAT-MIB."
+
+    ::= {aluSARMIBModules 22}
+
+
+-- ----------------------------------------------------------------------------
+-- ALU NAT MIB structure
+-- ----------------------------------------------------------------------------
+aluNat                      OBJECT IDENTIFIER ::= { aluSARObjs 24 }
+    aluNatObjs              OBJECT IDENTIFIER ::= { aluNat 1 }
+    aluNatUcToMcObjs          OBJECT IDENTIFIER ::= { aluNat 2 }
+    aluNatMcToMcObjs          OBJECT IDENTIFIER ::= { aluNat 3 }
+
+aluNatConformance           OBJECT IDENTIFIER ::= { aluSARConfs 24 }
+    aluNatCompliances       OBJECT IDENTIFIER ::= { aluNatConformance 1 }
+    aluNatGroups            OBJECT IDENTIFIER ::= { aluNatConformance 2 }
+
+aluNatNotificationsPrefix       OBJECT IDENTIFIER ::= { aluSARNotifyPrefix 20 }
+    aluNatNotifications             OBJECT IDENTIFIER ::= { aluNatNotificationsPrefix 0 }
+
+--
+-- Subtrees
+--
+aluNatVrtrObjs              OBJECT IDENTIFIER ::= { aluNatObjs 1 }
+
+-- ----------------------------------------------------------------------------
+--      The "NAT Virtual Router" Group
+-- ----------------------------------------------------------------------------
+--
+--      The NAT Virtual Router Table
+--
+
+aluNatVrtrTableLastCh OBJECT-TYPE
+    SYNTAX      TimeStamp
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "The value of the object tmnxNatVrtrTableLastCh indicates
+         the value of sysUpTime at the time of the last modification of
+         an entry in the tmnxNatVrtrTable."
+    ::= { aluNatObjs 3 }
+
+aluNatVrtrTable OBJECT-TYPE
+    SYNTAX      SEQUENCE OF AluNatVrtrEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+       "The tmnxNatVrtrTable contains objects to configure the NAT operation
+        of a virtual router instance."
+    ::= { aluNatVrtrObjs 1 }
+
+aluNatVrtrEntry OBJECT-TYPE
+    SYNTAX      AluNatVrtrEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+        "Each conceptual row represents information about the NAT operation
+         of a particular virtual router instance.
+
+         Entries in this table can be created and destroyed with SNMP operations."
+    INDEX { vRtrID }
+    ::= { aluNatVrtrTable 1 }
+
+AluNatVrtrEntry ::=
+    SEQUENCE {
+        aluNatVrtrLastMgmtChange        TimeStamp,
+        aluNatVrtrRowStatus             RowStatus,
+        aluNatVrtrDropWithoutNat        TruthValue
+    }
+
+aluNatVrtrLastMgmtChange OBJECT-TYPE
+    SYNTAX          TimeStamp
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "The value of aluNatVrtrLastMgmtChange indicates the sysUpTime at
+         the time of the most recent management-initiated change to this
+         table row."
+    ::= { aluNatVrtrEntry 1 }
+
+aluNatVrtrRowStatus OBJECT-TYPE
+    SYNTAX      RowStatus
+    MAX-ACCESS  read-create
+    STATUS      current
+    DESCRIPTION
+       "The value of aluNatVrtrRowStatus specifies the row status of this row."
+    ::= { aluNatVrtrEntry 2 }
+
+aluNatVrtrDropWithoutNat OBJECT-TYPE
+    SYNTAX     TruthValue
+    MAX-ACCESS read-create
+    STATUS     current
+    DESCRIPTION
+        "indicate if value set to true, the traffic cross from inside to outside without
+         NAT traslation packet will get dropped. work as a security knob"
+    DEFVAL { false }
+    ::= { aluNatVrtrEntry 3 }
+
+--
+--      The 1:1 NAT address Map Table for inside
+--
+
+aluNatInMapTableLastCh OBJECT-TYPE
+    SYNTAX      TimeStamp
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "The value of the object aluNatInMapTableLastCh indicates
+         the value of sysUpTime at the time of the last modification of
+         an entry in the aluNatInMapTable."
+    ::= { aluNatObjs 4 }
+
+
+aluNatInMapTable OBJECT-TYPE
+    SYNTAX      SEQUENCE OF AluNatInMapEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+       "The aluNatInMapTable contains the associations between
+        subscriber inside source IP address ranges of a deterministic NAT prefix
+        and the start of an outside IP address range."
+    ::= { aluNatVrtrObjs 2 }
+
+aluNatInMapEntry OBJECT-TYPE
+    SYNTAX      AluNatInMapEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+        "Each conceptual row represents an association between a source 
+         IP address range of a prefix for Deterministic NAT and
+         the start of an outside IP address range.
+
+         Rows in this table can be created and destroyed 
+         by SNMP operations on the row status object."
+
+    INDEX { vRtrID,
+            aluNatInMapInAddrType,
+            aluNatInMapInStart,
+            aluNatInMapInEnd
+          }
+    ::= { aluNatInMapTable 1 }
+
+AluNatInMapEntry ::=
+    SEQUENCE {
+        aluNatInMapInAddrType          InetAddressType,
+        aluNatInMapInStart             InetAddress,
+        aluNatInMapInEnd               InetAddress,
+        aluNatInMapRowStatus           RowStatus,
+        aluNatInMapLastCh              TimeStamp ,
+        aluNatInMapAdminState           TmnxAdminState, 
+        aluNatInMapOutAddrType         InetAddressType,
+        aluNatInMapOutStart            InetAddress,
+        aluNatInMapOperState           ServiceOperStatus
+    }
+   
+aluNatInMapInAddrType OBJECT-TYPE
+    SYNTAX      InetAddressType
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+        "The value of aluNatInMapInAddrType specifies
+         the address type of aluNatInMapInStart and aluNatInMapInEnd."
+    ::= { aluNatInMapEntry 1 }
+
+aluNatInMapInStart OBJECT-TYPE
+    SYNTAX      InetAddress (SIZE(4|16))
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+        "The value of aluNatInMapInStart specifies
+         the start of this inside IP address range."
+    ::= { aluNatInMapEntry 2 }
+
+aluNatInMapInEnd OBJECT-TYPE
+    SYNTAX      InetAddress (SIZE(4|16))
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+        "The value of aluNatInMapInEnd specifies
+         the end of this inside IP address range."
+    ::= { aluNatInMapEntry 3 }
+
+aluNatInMapRowStatus OBJECT-TYPE
+    SYNTAX      RowStatus
+    MAX-ACCESS  read-create
+    STATUS      current
+    DESCRIPTION
+       "The value of aluNatInMapRowStatus specifies the row status of this row."
+    ::= { aluNatInMapEntry 4 }
+
+aluNatInMapLastCh OBJECT-TYPE
+    SYNTAX          TimeStamp
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "The value of tmnxNatDetMapLastCh indicates the sysUpTime at
+         the time of the most recent change to this row."
+    ::= { aluNatInMapEntry 5 }
+
+aluNatInMapAdminState OBJECT-TYPE
+   SYNTAX      TmnxAdminState
+   MAX-ACCESS  read-create
+    STATUS      current
+    DESCRIPTION
+       "The value of aluNatInMapAdminState specifies 
+        the administrative state of this NAT insdie map."
+    DEFVAL { inService }
+    ::= { aluNatInMapEntry 6 }
+
+
+aluNatInMapOutAddrType OBJECT-TYPE
+    SYNTAX      InetAddressType
+    MAX-ACCESS  read-create
+    STATUS      current
+    DESCRIPTION
+        "The value of aluNatInMapOutAddrType specifies
+         the address type of aluNatInMapOutStart.
+         
+         A value for this object must be specified when the row is created."
+    ::= { aluNatInMapEntry 7 }
+
+aluNatInMapOutStart OBJECT-TYPE
+    SYNTAX      InetAddress (SIZE(4|16))
+    MAX-ACCESS  read-create
+    STATUS      current
+    DESCRIPTION
+        "The value of aluNatInMapOutStart specifies
+         the start of this outside IP address range.
+
+         A value for this object must be specified when the row is created."
+    ::= { aluNatInMapEntry 8 }
+
+aluNatInMapOperState OBJECT-TYPE
+    SYNTAX      ServiceOperStatus
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "The value of the object aluNatInMapOperState indicates
+         the operational state of this row."
+    ::= { aluNatInMapEntry 9 }
+
+--
+--      The unicast to multicast address Map Table 
+--
+
+aluUcToMcMapTableLastCh OBJECT-TYPE
+    SYNTAX      TimeStamp
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "The value of the object aluUcToMcMapTableLastCh indicates
+         the value of sysUpTime at the time of the last modification of
+         an entry in the alutInMapTable."
+    ::= { aluNatUcToMcObjs 1 }
+
+
+aluUcToMcMapTable OBJECT-TYPE
+    SYNTAX      SEQUENCE OF AluUcToMcMapEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+       "The aluUcToMcMapTable contains the associations between
+        unicast source IP address ranges and destination Ip address to deterministic 
+        multicast source and destination address ranage" 
+    ::= { aluNatUcToMcObjs 2 }
+
+aluUcToMcMapEntry OBJECT-TYPE
+    SYNTAX      AluUcToMcMapEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+        "Each conceptual row represents an association between a source 
+         IP address range of a prefix, with a unicast destination  and
+         the start of a mutlicas  address range with the interface address 
+         as multicast source IP.
+
+         Rows in this table can be created and destroyed 
+         by SNMP operations on the row status object."
+
+    INDEX { vRtrID,
+            vRtrIfIndex,
+            aluUcToMcMapSrcStartAddrType,
+            aluUcToMcMapSrcStartAddr,
+            aluUcToMcMapSrcEndAddrType,
+            aluUcToMcMapSrcEndAddr,
+            aluUcToMcMapDestAddrType,
+            aluUcToMcMapDestAddr
+          }
+    ::= { aluUcToMcMapTable 1 }
+
+AluUcToMcMapEntry ::=
+    SEQUENCE {
+        aluUcToMcMapSrcStartAddrType    InetAddressType,
+        aluUcToMcMapSrcStartAddr        InetAddress,
+        aluUcToMcMapSrcEndAddrType      InetAddressType,
+        aluUcToMcMapSrcEndAddr          InetAddress,
+        aluUcToMcMapDestAddrType        InetAddressType,
+        aluUcToMcMapDestAddr            InetAddress,
+        aluUcToMcMapRowStatus           RowStatus,
+        aluUcToMcMapLastCh              TimeStamp,
+        aluUcToMcMapAdminState          TmnxAdminState,
+        aluUcToMcMapOperState           ServiceOperStatus,
+        aluUcToMcMapMcAddrType          InetAddressType,
+        aluUcToMcMapMcStartAddr         InetAddress
+    }
+
+aluUcToMcMapSrcStartAddrType OBJECT-TYPE
+    SYNTAX      InetAddressType
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+        "The value of aluUcToMcMapSrcStartAddrType specifies
+         the address type of aluUcToMcMapSrcStartAddr."
+    ::= { aluUcToMcMapEntry 1 }
+
+aluUcToMcMapSrcStartAddr OBJECT-TYPE
+    SYNTAX      InetAddress (SIZE(4|16))
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+        "The value of aluUcToMcMapSrcStartAddr specifies
+         the start of unicast source IP address range."
+    ::= { aluUcToMcMapEntry 2 }
+
+aluUcToMcMapSrcEndAddrType OBJECT-TYPE
+    SYNTAX      InetAddressType
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+        "The value of aluUcToMcMapSrcEndAddrType specifies
+         the address type of aluUcToMcMapSrcEndAddr."
+    ::= { aluUcToMcMapEntry 3 }
+
+aluUcToMcMapSrcEndAddr OBJECT-TYPE
+    SYNTAX      InetAddress (SIZE(4|16))
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+        "The value of  aluUcToMcMapSrcEndAddr specifies
+         the end of this unicast source IP address range."
+    ::= { aluUcToMcMapEntry 4 }
+
+aluUcToMcMapDestAddrType OBJECT-TYPE
+    SYNTAX      InetAddressType
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+        "The value of aluUcToMcMapDestAddrType specifies
+         the address type of aluUcToMcMapDestAddr."
+    ::= { aluUcToMcMapEntry 5 }
+
+aluUcToMcMapDestAddr OBJECT-TYPE
+    SYNTAX      InetAddress (SIZE(4|16))
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+        "The value of aluUcToMcMapDestAddr specifies
+         the unicast destination IP Address"
+    ::= { aluUcToMcMapEntry 6 }
+
+aluUcToMcMapRowStatus OBJECT-TYPE
+    SYNTAX      RowStatus
+    MAX-ACCESS  read-create
+    STATUS      current
+    DESCRIPTION
+       "The value of aluUcToMCMapRowStatus specifies the row status of this row."
+    ::= { aluUcToMcMapEntry 7 }
+
+aluUcToMcMapLastCh OBJECT-TYPE
+    SYNTAX          TimeStamp
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "The value of aluUcToMcMapLastCh indicates the sysUpTime at
+         the time of the most recent change to this row."
+    ::= { aluUcToMcMapEntry 8 }
+
+aluUcToMcMapAdminState OBJECT-TYPE
+   SYNTAX      TmnxAdminState
+   MAX-ACCESS  read-create
+    STATUS      current
+    DESCRIPTION
+       "The value of aluUc2McMapAdminState specifies 
+        the administrative state of this unicast to
+        multicast  map."
+    DEFVAL { inService }
+    ::= { aluUcToMcMapEntry 9 }
+
+aluUcToMcMapOperState OBJECT-TYPE
+    SYNTAX      ServiceOperStatus
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "The value of the object aluUcToMcMapOperState indicates
+         the operational state of this row."
+    ::= { aluUcToMcMapEntry 10 }
+
+aluUcToMcMapMcAddrType OBJECT-TYPE
+    SYNTAX      InetAddressType
+    MAX-ACCESS  read-create
+    STATUS      current
+    DESCRIPTION
+        "The value of aluUcToMcMapMcAddrType specifies
+         the address type of aluUcToMcMapOutStart.
+
+         A value for this object must be specified when the row is created."
+    ::= { aluUcToMcMapEntry 11 }
+
+aluUcToMcMapMcStartAddr OBJECT-TYPE
+    SYNTAX      InetAddress (SIZE(4|16))
+    MAX-ACCESS  read-create
+    STATUS      current
+    DESCRIPTION
+        "The value of aluUcToMcMapMcStartAddr specifies
+         the start of mapped to multicast IP address range.
+
+         A value for this object must be specified when the row is created."
+    ::= { aluUcToMcMapEntry 12 }
+
+--
+--      The multicast to multicast address Map Table 
+--
+aluMcToMcMapTableLastCh OBJECT-TYPE
+    SYNTAX      TimeStamp
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "The value of the object aluMcToMcMapTableLastCh indicates
+         the value of sysUpTime at the time of the last modification of
+         an entry in the alutMcToMcMapTable."
+    ::= { aluNatMcToMcObjs 1 }
+
+
+aluMcToMcMapTable OBJECT-TYPE
+    SYNTAX      SEQUENCE OF AluMcToMcMapEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+       "The aluMcToMcMapTable contains the associations between
+        multicast source IP address ranges and destination Ip address to deterministic 
+        another multicast source and destination address ranage" 
+    ::= { aluNatMcToMcObjs 2 }
+
+aluMcToMcMapEntry OBJECT-TYPE
+    SYNTAX      AluMcToMcMapEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+        "Each conceptual row represents an association between a source 
+         IP address range of a prefix, with a multicast destination  and
+         the start of a mutlicasit  address range with the interface address 
+         as multicast source IP.
+
+         Rows in this table can be created and destroyed 
+         by SNMP operations on the row status object."
+
+    INDEX { vRtrID,
+            vRtrIfIndex,
+            aluMcToMcMapSrcAddrType,
+            aluMcToMcMapSrcAddr,
+            aluMcToMcMapDestStartAddrType,
+            aluMcToMcMapDestStartAddr,
+            aluMcToMcMapDestEndAddrType,
+            aluMcToMcMapDestEndAddr
+          }
+   ::= { aluMcToMcMapTable 1 }
+
+AluMcToMcMapEntry ::=
+    SEQUENCE {
+        aluMcToMcMapSrcAddrType    InetAddressType,
+        aluMcToMcMapSrcAddr        InetAddress,
+        aluMcToMcMapDestStartAddrType      InetAddressType,
+        aluMcToMcMapDestStartAddr          InetAddress,
+        aluMcToMcMapDestEndAddrType        InetAddressType,
+        aluMcToMcMapDestEndAddr            InetAddress,
+        aluMcToMcMapRowStatus              RowStatus,
+        aluMcToMcMapLastCh                 TimeStamp,
+        aluMcToMcMapAdminState             TmnxAdminState,
+        aluMcToMcMapOperState              ServiceOperStatus,
+        aluMcToMcMapDownStreamMcAddrType          InetAddressType,
+        aluMcToMcMapDownStreamMcStartAddr         InetAddress
+    }
+
+aluMcToMcMapSrcAddrType OBJECT-TYPE
+    SYNTAX      InetAddressType
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+        "The value of aluMcToMcMapSrcAddrType specifies
+         the address type of aluMcToMcMapSrcAddr."
+    ::= { aluMcToMcMapEntry 1 }
+
+aluMcToMcMapSrcAddr OBJECT-TYPE
+    SYNTAX      InetAddress (SIZE(4|16))
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+        "The value of aluMcToMcMapSrcAddr specifies
+         the start of Multicast source IP address."
+    ::= { aluMcToMcMapEntry 2 }
+
+aluMcToMcMapDestStartAddrType OBJECT-TYPE
+    SYNTAX      InetAddressType
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+        "The value of aluMcToMcMapDestStartAddrType specifies
+         the address type of aluMcToMcMapDestStartAddr."
+    ::= { aluMcToMcMapEntry 3 }
+
+aluMcToMcMapDestStartAddr OBJECT-TYPE
+    SYNTAX      InetAddress (SIZE(4|16))
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+        "The value of  aluMcToMcMapDestStartAddr specifies
+         the start of this Mutlicast IP address range."
+    ::= { aluMcToMcMapEntry 4 }
+
+aluMcToMcMapDestEndAddrType OBJECT-TYPE
+    SYNTAX      InetAddressType
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+        "The value of aluMcToMcMapDestEndAddrType specifies
+         the address type of aluMcToMcMapDestEndAddr."
+    ::= { aluMcToMcMapEntry 5 }
+
+aluMcToMcMapDestEndAddr OBJECT-TYPE
+    SYNTAX      InetAddress (SIZE(4|16))
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+        "The value of  aluMcToMcMapDestEndAddr specifies
+         the start of this Mutlicast IP address range."
+    ::= { aluMcToMcMapEntry 6 }
+
+aluMcToMcMapRowStatus OBJECT-TYPE
+    SYNTAX      RowStatus
+    MAX-ACCESS  read-create
+    STATUS      current
+    DESCRIPTION
+       "The value of aluMcToMCMapRowStatus specifies the 
+        row status of this row."
+    ::= { aluMcToMcMapEntry 7 }
+
+aluMcToMcMapLastCh OBJECT-TYPE
+    SYNTAX          TimeStamp
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "The value of aluMcToMcMapLastCh indicates the sysUpTime at
+         the time of the most recent change to this row."
+    ::= { aluMcToMcMapEntry 8 }
+
+aluMcToMcMapAdminState OBJECT-TYPE
+   SYNTAX      TmnxAdminState
+   MAX-ACCESS  read-create
+    STATUS      current
+    DESCRIPTION
+       "The value of aluMcToMcMapAdminState specifies
+        the administrative state of this multicast to 
+        multicast map."
+    DEFVAL { inService }
+    ::= { aluMcToMcMapEntry 9 }
+
+aluMcToMcMapOperState OBJECT-TYPE
+    SYNTAX      ServiceOperStatus
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "The value of the object aluMcToMcMapOperState indicates
+         the operational state of this row."
+    ::= { aluMcToMcMapEntry 10 }
+
+aluMcToMcMapDownStreamMcAddrType OBJECT-TYPE
+    SYNTAX      InetAddressType
+    MAX-ACCESS  read-create
+    STATUS      current
+    DESCRIPTION
+        "The value of aluMcToMcMapDownStreamMcAddrType specifies
+         the address type of aluMcToMcMapDownStreamMcAddr."
+    ::= { aluMcToMcMapEntry 11 }
+
+aluMcToMcMapDownStreamMcStartAddr OBJECT-TYPE
+    SYNTAX      InetAddress (SIZE(4|16))
+    MAX-ACCESS  read-create
+    STATUS      current
+    DESCRIPTION
+        "The value of aluMcToMcMapDownStreaMcStartAddr specifies
+         the start of Multicast group IP address."
+    ::= { aluMcToMcMapEntry 12 }
+
+
+-- ----------------------------------------------------------------------------
+-- NAT compliance statements
+-- ----------------------------------------------------------------------------
+aluNatCompliance MODULE-COMPLIANCE
+    STATUS  current
+    DESCRIPTION
+        "The compliance statement for management of 1:1 static NAT on
+         Nokia 7705 systems."
+    MODULE  -- this module
+        MANDATORY-GROUPS {
+            aluNatGroup
+        }
+    ::= { aluNatCompliances 1 }
+
+------------------------------------------------------------------------------
+-- NAT conformance groups
+------------------------------------------------------------------------------
+aluNatGroup OBJECT-GROUP
+    OBJECTS {
+         aluNatVrtrTableLastCh,
+         aluNatVrtrDropWithoutNat,
+         aluNatVrtrLastMgmtChange, 
+         aluNatVrtrRowStatus,
+
+         aluNatInMapTableLastCh,
+         aluNatInMapRowStatus,
+         aluNatInMapLastCh,
+         aluNatInMapAdminState,
+         aluNatInMapOutAddrType ,
+         aluNatInMapOutStart ,
+         aluNatInMapOperState
+     }
+    STATUS       current
+    DESCRIPTION
+        "The group of objects providing configuration of 1:1 static NAT on
+         Nokia 7705 SAR systems."
+    ::= { aluNatGroups 1 }     
+
+aluUcToMcGroup  OBJECT-GROUP
+    OBJECTS {
+        aluUcToMcMapRowStatus,
+        aluUcToMcMapLastCh,
+        aluUcToMcMapAdminState,
+        aluUcToMcMapOperState,
+        aluUcToMcMapMcAddrType,
+        aluUcToMcMapMcStartAddr 
+     }
+    STATUS       current
+    DESCRIPTION
+        "The group of objects providing configuration of unicast to multicast
+         NAT on Nokia 7705 SAR systems."
+    ::= { aluNatGroups 2 }   
+
+aluMcToMcGroup  OBJECT-GROUP
+    OBJECTS {
+        aluMcToMcMapRowStatus,
+        aluMcToMcMapLastCh,
+        aluMcToMcMapAdminState,
+        aluMcToMcMapOperState,
+        aluMcToMcMapDownStreamMcAddrType,
+        aluMcToMcMapDownStreamMcStartAddr
+     }
+    STATUS       current
+    DESCRIPTION
+        "The group of objects providing configuration of multicast to multicast
+         NAT on Nokia 7705 SAR systems."
+    ::= { aluNatGroups 3 }
+
+      
+------------------------------------------------------------------------------
+-- NAT notification groups
+------------------------------------------------------------------------------
+
+END
+      

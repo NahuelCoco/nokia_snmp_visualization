@@ -1,0 +1,119 @@
+ALU-PCAP-MIB DEFINITIONS ::= BEGIN
+
+IMPORTS
+        MODULE-IDENTITY, OBJECT-TYPE,
+        NOTIFICATION-TYPE,
+        Unsigned32, TimeTicks, Integer32,
+        Counter32, Counter64, IpAddress         FROM SNMPv2-SMI
+
+        NOTIFICATION-GROUP,
+        MODULE-COMPLIANCE, OBJECT-GROUP         FROM SNMPv2-CONF
+
+        TEXTUAL-CONVENTION, TruthValue,
+        DisplayString, TimeStamp, RowStatus,
+        RowPointer                              FROM SNMPv2-TC
+
+        TNamedItemOrEmpty, TmnxAdminState,
+        TItemDescription                        FROM TIMETRA-TC-MIB
+
+        aluSARMIBModules,
+        aluSARObjs,aluSARConfs,
+        aluSARNotifyPrefix                      FROM ALU-SAR-GLOBAL-MIB
+
+        TmnxPortAdminStatus, tmnxChassisIndex,
+        TmnxChassisIndex, TmnxSETSRefSource,
+        TmnxHwIndexOrZero                       FROM TIMETRA-CHASSIS-MIB
+
+        InterfaceIndex                          FROM IF-MIB
+
+        tmnxPcapSessionEntry                    FROM TIMETRA-PCAP-MIB
+        ;
+
+aluPcapMIBModules MODULE-IDENTITY
+      LAST-UPDATED "202103180000Z"
+      ORGANIZATION "Nokia"
+      CONTACT-INFO
+          "Nokia SROS Support
+           Web: http://support.nokia.com"
+      DESCRIPTION
+          "This document is the SNMP MIB  module to manage and provision the  PCAP"
+  
+      ::= {aluSARMIBModules 23}
+
+aluPcap                     OBJECT IDENTIFIER ::= { aluSARObjs 25 }
+    aluPcapObjects          OBJECT IDENTIFIER ::= { aluPcap 1 }
+
+aluPcapConfigurations       OBJECT IDENTIFIER ::= { aluPcapObjects 1 }
+
+aluPcapSessionTable             OBJECT-TYPE
+    SYNTAX      SEQUENCE OF AluPcapSessionEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+        "The aluPcapSessionTable contains information for Packet Capture
+         (PCAP) sessions."
+    ::= { aluPcapConfigurations 1 }
+
+aluPcapSessionEntry             OBJECT-TYPE
+    SYNTAX      AluPcapSessionEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+        "The aluPcapSessionEntry contains information for the specified PCAP
+         session."
+    AUGMENTS { tmnxPcapSessionEntry }
+    ::= { aluPcapSessionTable 1 }
+
+AluPcapSessionEntry             ::= SEQUENCE
+{
+    aluPcapSessionPacketsContiguous   TruthValue,
+    aluPcapSessionReceivedPackets     Counter32
+}
+
+aluPcapSessionPacketsContiguous  OBJECT-TYPE
+    SYNTAX      TruthValue
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "The value of aluPcapSessionPacketsContiguous indicates the number
+         of contiguous packets received for this PCAP session."
+    ::= { aluPcapSessionEntry 1 }
+
+aluPcapSessionReceivedPackets    OBJECT-TYPE
+    SYNTAX      Counter32
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "The value of aluPcapSessionReceivedPackets indicates the total
+         number of received packets for this PCAP session."
+    ::= { aluPcapSessionEntry 2 }
+
+aluPcapConformance              OBJECT IDENTIFIER ::= { aluSARConfs 25 }
+
+aluPcapCompliances              OBJECT IDENTIFIER ::= { aluPcapConformance 1 }
+
+aluPcapComplianceV1          MODULE-COMPLIANCE
+    STATUS      current
+    DESCRIPTION
+        "The compliance statement for management of PCAPs for release 16.0 on
+         Nokia SROS series systems."
+    MODULE
+        MANDATORY-GROUPS {
+            aluPcapSessionGroupV1
+        }
+    ::= { aluPcapCompliances 1 }
+
+aluPcapGroups                   OBJECT IDENTIFIER ::= { aluPcapConformance 2 }
+
+aluPcapSessionGroupV1   OBJECT-GROUP
+    OBJECTS {
+        aluPcapSessionPacketsContiguous,
+        aluPcapSessionReceivedPackets
+    }
+    STATUS      current
+    DESCRIPTION
+        "The group of objects supporting PCAP session status for the Nokia 7705"
+    ::= { aluPcapGroups 1 }
+
+
+END

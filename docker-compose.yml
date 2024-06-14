@@ -1,0 +1,42 @@
+version: "3"
+
+networks:
+  public: {}
+  
+services:
+  prometheus:
+    image: quay.io/prometheus/prometheus:v2.47.2
+    ports:
+      - 9090:9090
+    networks:
+      - public
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+
+  snmpexporter:
+    image: prom/snmp-exporter
+    ports:
+      - 9116:9116
+    volumes:
+      - ./snmp_exporter/snmp.yml:/etc/snmp_exporter/snmp.yml:ro
+    networks:
+      - public
+
+  grafana:
+    image: grafana/grafana:10.2.1
+    ports:
+      - 3000:3000
+    networks:
+      - public
+    volumes:
+      - ./grafana/grafanadatasource.yml:/etc/grafana/provisioning/datasources/datasource.yaml:ro
+      - ./grafana/grafanadashboards.yml:/etc/grafana/provisioning/dashboards/dashboards.yaml:ro
+      - ./grafana/dashboards:/var/lib/grafana/dashboards
+    environment:
+      GF_INSTALL_PLUGINS: https://algenty.github.io/flowcharting-repository/archives/agenty-flowcharting-panel-1.0.0d.220606199-SNAPSHOT.zip;agenty-flowcharting-panel
+      GF_ORG_ROLE: "Admin"
+      GF_ORG_NAME: "Main Org"
+      GF_AUTH_ANONYMOUS_ENABLED: "true"
+      GF_AUTH_ANONYMOUS: "true"

@@ -1,0 +1,261 @@
+TIMETRA-PXC-MIB DEFINITIONS ::= BEGIN
+
+IMPORTS
+        MODULE-COMPLIANCE, OBJECT-GROUP,
+        NOTIFICATION-GROUP                        FROM SNMPv2-CONF
+
+        MODULE-IDENTITY, OBJECT-TYPE,
+        NOTIFICATION-TYPE, Unsigned32, Integer32,
+        Counter32, Gauge32, IpAddress             FROM SNMPv2-SMI
+
+        TEXTUAL-CONVENTION, RowStatus,
+        TruthValue, TimeStamp                     FROM SNMPv2-TC
+
+        timetraSRMIBModules, tmnxSRObjs,
+        tmnxSRNotifyPrefix, tmnxSRConfs           FROM TIMETRA-GLOBAL-MIB
+
+        TItemDescription, TmnxAdminState,
+        LAGInterfaceNumberOrZero,
+        TmnxOperState, TmnxPortID                 FROM TIMETRA-TC-MIB
+
+        SdpId                                     FROM TIMETRA-SERV-MIB
+        ;
+
+timetraPxcMIBModule MODULE-IDENTITY
+        LAST-UPDATED "201504090000Z"
+        ORGANIZATION "Nokia"
+        CONTACT-INFO
+            "Nokia SROS Support
+             Web: http://www.nokia.com"
+        DESCRIPTION
+
+        "This document is the SNMP MIB module to manage and provision the
+        Port Cross-Connect (PXC) components of the Nokia SROS
+        device.
+
+        Copyright (c) 2015-2016 Nokia. All rights reserved.
+        Reproduction of this document is authorized on the condition that
+        the foregoing copyright notice is included.
+
+        This SNMP MIB module (Specification) embodies Nokia's
+        proprietary intellectual property.  Nokia retains all
+        title and ownership in the Specification, including any
+        revisions.
+
+        Nokia grants all interested parties a non-exclusive
+        license to use and distribute an unmodified copy of this
+        Specification in connection with management of Nokia products,
+        and without fee, provided this copyright notice and license
+        appear on all copies.
+
+        This Specification is supplied `as is', and Nokia makes
+        no warranty, either express or implied, as to the use,
+        operation, condition, or performance of the Specification."
+
+--
+-- Revision History
+--
+        REVISION        "201504090000Z"
+        DESCRIPTION     "Rev 0.1               09 Apr 2015 00:00
+                         Initial version of the TIMETRA-PXC-MIB."
+
+        ::= { timetraSRMIBModules 105 }
+
+tmnxPxcObjs                      OBJECT IDENTIFIER ::= { tmnxSRObjs         105 }
+tmnxPxcConformance               OBJECT IDENTIFIER ::= { tmnxSRConfs        105 }
+tmnxPxcNotifyPrefix              OBJECT IDENTIFIER ::= { tmnxSRNotifyPrefix 105 }
+
+-- Object Groups in the Nokia PXC MIB Module
+tmnxPxcConfigTimestamps          OBJECT IDENTIFIER ::= { tmnxPxcObjs 1 }
+tmnxPxcConfigurations            OBJECT IDENTIFIER ::= { tmnxPxcObjs 2 }
+tmnxPxcStatistics                OBJECT IDENTIFIER ::= { tmnxPxcObjs 3 }
+tmnxPxcNotifyObjects             OBJECT IDENTIFIER ::= { tmnxPxcObjs 4 }
+
+-- Notification Groups in the Nokia PXC MIB Module
+tmnxPxcNotification              OBJECT IDENTIFIER ::= { tmnxPxcNotifyPrefix 0 }
+
+-- Compliance Groups in the Nokia PXC MIB Module
+tmnxPxcCompliances               OBJECT IDENTIFIER ::= { tmnxPxcConformance 1 }
+tmnxPxcGroups                    OBJECT IDENTIFIER ::= { tmnxPxcConformance 2 }
+
+--%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+--
+--  TIMETRA-PXC-MIB Textual Conventions
+--
+
+--%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+--
+--  TIMETRA-PXC-MIB Port Cross-Connect Configuration Objects
+--
+tmnxPxcTableLastChanged          OBJECT-TYPE
+    SYNTAX      TimeStamp
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "The value of tmnxPxcTableLastChanged indicates the time, since
+         system startup, when tmnxPxcTable last changed configuration."
+    ::= { tmnxPxcConfigTimestamps 1 }
+
+tmnxPxcTable                     OBJECT-TYPE
+    SYNTAX      SEQUENCE OF TmnxPxcEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+        "The tmnxPxcTable contains the Port Cross-Connect (PXC)
+         configuration information.
+
+         A PXC is a physical port which is internally looped. Two logical
+         sub-ports are created under the PXC. These logical ports are used
+         to create two paths within the loop; one upstream path, and one
+         downstream path."
+    ::= { tmnxPxcConfigurations 1 }
+
+tmnxPxcEntry                 OBJECT-TYPE
+    SYNTAX      TmnxPxcEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+        "The tmnxPxcEntry consists of configurable objects for a given PXC."
+    INDEX { tmnxPxcId }
+    ::= { tmnxPxcTable 1 }
+
+TmnxPxcEntry                     ::= SEQUENCE {
+    tmnxPxcId                        Unsigned32,
+    tmnxPxcRowStatus                 RowStatus,
+    tmnxPxcLastChanged               TimeStamp,
+    tmnxPxcAdminState                TmnxAdminState,
+    tmnxPxcOperState                 TmnxOperState,
+    tmnxPxcPortId                    TmnxPortID,
+    tmnxPxcDescription               TItemDescription
+}
+
+tmnxPxcId                        OBJECT-TYPE
+    SYNTAX      Unsigned32 (1..64)
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+        "The value of tmnxPxcId specifies the unique identifier of this PXC."
+    ::= { tmnxPxcEntry 1 }
+
+tmnxPxcRowStatus                 OBJECT-TYPE
+    SYNTAX      RowStatus
+    MAX-ACCESS  read-create
+    STATUS      current
+    DESCRIPTION
+        "The value of tmnxPxcRowStatus specifies the row status. It allows the
+         creation and deletion of PXC entries."
+    ::= { tmnxPxcEntry 2 }
+
+tmnxPxcLastChanged               OBJECT-TYPE
+    SYNTAX      TimeStamp
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "The value of tmnxPxcLastChanged indicates the time, since system
+         startup, that the configuration of this PXC entry was created or
+         modified."
+    ::= { tmnxPxcEntry 3 }
+
+tmnxPxcAdminState                OBJECT-TYPE
+    SYNTAX      TmnxAdminState
+    MAX-ACCESS  read-create
+    STATUS      current
+    DESCRIPTION
+        "The value of tmnxPxcAdminState specifies the administrative state for
+         this PXC entry."
+    DEFVAL  { outOfService }
+    ::= { tmnxPxcEntry 4 }
+
+tmnxPxcOperState                 OBJECT-TYPE
+    SYNTAX      TmnxOperState
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "The value of tmnxPxcOperState indicates the operational state of this
+         PXC entry."
+    ::= { tmnxPxcEntry 5 }
+
+tmnxPxcPortId                    OBJECT-TYPE
+    SYNTAX      TmnxPortID
+    MAX-ACCESS  read-create
+    STATUS      current
+    DESCRIPTION
+        "The value of tmnxPxcPortId specifies the port identifier of the port
+         associated with this PXC entry.
+
+         A value of '1e000000'H indicates this object has not been configured.
+
+         When this object is configured, two logical sub-ports are automatically
+         created in tmnxPortTable. These logical sub-ports are used
+         to create two paths within the loop; one upstream path, and one
+         downstream path. These sub-ports are destroyed when either this PXC
+         row is destroyed, this object is de-provisioned."
+    DEFVAL  { '1e000000'H }
+    ::= { tmnxPxcEntry 6 }
+
+tmnxPxcDescription               OBJECT-TYPE
+    SYNTAX      TItemDescription
+    MAX-ACCESS  read-create
+    STATUS      current
+    DESCRIPTION
+        "The value of tmnxPxcDescription specifies the description of this PXC
+         entry.
+
+         An empty string indicates this object has not been configured."
+    DEFVAL  { ''H }
+    ::= { tmnxPxcEntry 7 }
+ 
+
+--%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+--
+--  TIMETRA-PXC-MIB Statistics Objects
+--
+
+--%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+--
+--  TIMETRA-PXC-MIB Notification Objects
+--
+
+--%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+--
+--  TIMETRA-PXC-MIB Notifications
+--
+
+--%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+--
+--  TIMETRA-PXC-MIB Compliance Statements
+--
+tmnxPxcComplianceV14v0           MODULE-COMPLIANCE
+    STATUS      current
+    DESCRIPTION
+        "The compliance statement for the management of Port Cross-Connects
+         in Release 14.0 on Nokia SROS series systems."
+    MODULE -- this module
+        MANDATORY-GROUPS {
+            tmnxPxcV14v0Group
+        }
+    ::= { tmnxPxcCompliances 1 }
+
+--%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+--
+--  TIMETRA-PXC-MIB Group Statements
+--
+tmnxPxcV14v0Groups               OBJECT IDENTIFIER ::= { tmnxPxcGroups 1 }
+
+tmnxPxcV14v0Group                OBJECT-GROUP
+    OBJECTS {
+        tmnxPxcTableLastChanged,
+        tmnxPxcRowStatus,
+        tmnxPxcLastChanged,
+        tmnxPxcAdminState,
+        tmnxPxcOperState,
+        tmnxPxcPortId,
+        tmnxPxcDescription
+     }
+    STATUS  current
+    DESCRIPTION
+        "The group of objects supporting management of Port Cross-Connect (PXC)
+         configurations in release 14.0 on Nokia SROS series systems."
+    ::= { tmnxPxcV14v0Groups 1 }
+
+END
