@@ -1,7 +1,0 @@
-auths:
-  auth_name:
-    community: private
-    security_level: noAuthNoPriv
-    auth_protocol: MD5
-    priv_protocol: DES
-    version: 2
