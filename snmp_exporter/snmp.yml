@@ -1,4 +1,11 @@
 # WARNING: This file was auto-generated using snmp_exporter generator, manual changes will be lost.
+auths:
+  auth_name:
+    community: private
+    security_level: noAuthNoPriv
+    auth_protocol: MD5
+    priv_protocol: DES
+    version: 2
 modules:
   sarMIB:
     walk:

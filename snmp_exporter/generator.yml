@@ -1,10 +1,10 @@
-#auth:
-#  auth_name:
-#    version: 2  # SNMP version to use. Defaults to 2.
+auths:
+  auth_name:
+    version: 2  # SNMP version to use. Defaults to 2.
                 # 1 will use GETNEXT, 2 and 3 use GETBULK.
 
     # Community string is used with SNMP v1 and v2. Defaults to "public".
-#    community: private
+    community: private
 
 modules:
 

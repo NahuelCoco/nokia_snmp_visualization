@@ -6,6 +6,7 @@ networks:
 services:
   prometheus:
     image: quay.io/prometheus/prometheus:v2.47.2
+    container_name: ncoco_prometheus
     ports:
       - 9090:9090
     networks:
@@ -17,6 +18,7 @@ services:
 
   snmpexporter:
     image: prom/snmp-exporter
+    container_name: ncoco_snmpexporter
     ports:
       - 9116:9116
     volumes:
@@ -26,6 +28,7 @@ services:
 
   grafana:
     image: grafana/grafana:10.2.1
+    container_name: ncoco_grafana
     ports:
       - 3000:3000
     networks:
