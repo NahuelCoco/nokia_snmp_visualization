@@ -3,4 +3,4 @@
 3) Configure Target SNMP IP Address in prometheus/prometheus.yml
 4) Configure desired MIBs in snmp_exporter/generator.yml
 5) ./startLab.sh
-Enjoy!
+6) Enjoy!
